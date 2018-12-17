@@ -1,3 +1,71 @@
+let pongLevel = [];
+function levelCreation() {
+  let string1 = "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww";
+  let string2 = "g                                                g";
+  let string3 = "g                                                g";
+  let string4 = "g                                                g";
+  let string5 = "g                                                g";
+  let string6 = "g                                                g";
+  let string7 = "g                                                g";
+  let string8 = "g                                                g";
+  let string9 = "g                                                g";
+  let string10 = "g                                                g";
+  let string11 = "g                                                g";
+  let string12 = "g                                                g";
+  let string13 = "g                                                g";
+  let string14 = "g                                                g";
+  let string15 = "g                                                g";
+  let string16 = "g                                                g";
+  let string17 = "g                                                g";
+  let string18 = "g                                                g";
+  let string19 = "g                                                g";
+  let string20 = "g                                                g";
+  let string21 = "g                                                g";
+  let string22 = "g                                                g";
+  let string23 = "g                                                g";
+  let string24 = "g                                                g";
+  let string25 = "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww";
+  pongLevel.push(string1);
+  pongLevel.push(string2);
+  pongLevel.push(string3);
+  pongLevel.push(string4);
+  pongLevel.push(string5);
+  pongLevel.push(string6);
+  pongLevel.push(string7);
+  pongLevel.push(string8);
+  pongLevel.push(string9);
+  pongLevel.push(string10);
+  pongLevel.push(string11);
+  pongLevel.push(string12);
+  pongLevel.push(string13);
+  pongLevel.push(string14);
+  pongLevel.push(string15);
+  pongLevel.push(string16);
+  pongLevel.push(string17);
+  pongLevel.push(string18);
+  pongLevel.push(string19);
+  pongLevel.push(string20);
+  pongLevel.push(string21);
+  pongLevel.push(string22);
+  pongLevel.push(string23);
+  pongLevel.push(string24);
+  pongLevel.push(string25);
+}
+
+class WorldLoader {
+  /**
+   * Method that takes a level and adds the actors to the world model.
+   * @param {array} levelData - an array of strings from the levelCreator.
+   * @param {WorldModel} - the world model you are loading the level to.
+   */
+  readData(levelData, w) {
+    levelData.forEach((item, index) => item.split("").forEach((a, x) => {
+      if(a === "g") w.addActor(new Goal(x, index));
+      else if (a === "w") w.addActor(new Wall(x, index));
+    }));
+  }
+}
+
 /** Class representing a 2 dimensional point. */
 class Point {
   constructor(x, y) {
@@ -32,14 +100,34 @@ class WorldModel {
     this.actors_ = [];
     this.score_ = {L: 0, R: 0};
   }
-  
   update(steps) {
     this.actors_.forEach(x => x.update(steps));
+    let ballArr = this.actors_.filter(x => x.type === "Ball");
+    let getIndex = arr => {
+      for(let i = 0; i < arr.length; i++) {
+        if(arr[i].type === "Ball") return i;
+      }
+    }
+    let ballInd = getIndex(this.actors_);
+    let ball = {val: ballArr[0], ind: ballInd};
+    this.actors_.forEach(a => {
+      if(a.type !== "Ball" && ball.val.didCollide(a)) {
+        console.log("collision!");
+        this.ach_.applyCollisionAction(a, ball.val);
+      }
+    });
+    if(!(ball.val.isActive)) {
+      this.actors_.splice(ball.ind ,1);
+      let randDir = Math.round(Math.random());
+      let pongBall = new Ball((this.world_.width_/2), (this.world_.height_/2), ((randDir * 180) + 50), "white");
+      this.world_.addActor(pongBall); 
+    }
     if(!(this.views_ == [])) {
       this.views_.forEach(x => x.display(this));
     }
-
-
+  }
+  get score() {
+    return this.score_;
   }
   /**
    * @type {tuple}
@@ -81,7 +169,7 @@ class WorldModel {
   }
 }
 
-class PongController {
+class PaddleController {
   constructor(world, paddle) {
     if(world instanceof WorldModel) {
       this.paddleWorld_ = world;
@@ -130,19 +218,18 @@ class PongController {
   }
 }
 
-
 class Player {
-  constructor(pongController) {
-    if(!(pongController instanceof PongController)) throw new Error("Not given a valid Pong Controller.");
-    else this.pc_ = pongController;
+  constructor(paddleController) {
+    if(!(paddleController instanceof PaddleController)) throw new Error("Not given a valid Paddle Controller.");
+    else this.pc_ = paddleController;
     if(this.constructor === Player) throw new Error("Cannot instantiate a Player, which is an abstract base class");
   }
 }
 
 /** Class representing a Human Player of the snake game. */
 class HumanPlayer extends Player {
-  constructor(pongController, inputHandler) {
-    super(pongController);
+  constructor(paddleController, inputHandler) {
+    super(paddleController);
     this.inputHandler_ = inputHandler;
   }
   makeTurn() {
@@ -183,13 +270,18 @@ class CanvasView extends View {
   display(world) {
     this.canvas_.width = this.scalingFactor_*world.width;
     this.canvas_.height = this.scalingFactor_*world.height;
-    this.context.fillText(world.score.L + " : " + world.score.R, 10, 50);
+    this.context_.fillText(world.score.L + " : " + world.score.R, 10, 50, 400);
     world.actors.forEach(x => {
       this.context_.fillStyle = x.color || "white";
       if(x.type === "Ball") {
-        this.context_.arc(x.position.posX*this.scalingFactor_, x.position.posY*this.scalingFactor_, this.scalingFactor_,0,2*Math.PI,);
-        this.context.stroke();
-        this.context.fill();
+        this.context_.arc(x.position.posX*this.scalingFactor_, x.position.posY*this.scalingFactor_, (this.scalingFactor_/1.5),0,2*Math.PI,);
+        this.context_.stroke();
+        this.context_.fill();
+      }
+      else if(x.type === "Paddle") { 
+        for(let index = 0; index < x.parts_.length; index++) {
+          this.context_.fillRect(x.parts_[index].posX*this.scalingFactor_, x.parts_[index].posY*this.scalingFactor_, this.scalingFactor_, this.scalingFactor_);
+        }
       }
       else this.context_.fillRect(x.position.posX*this.scalingFactor_, x.position.posY*this.scalingFactor_, this.scalingFactor_, this.scalingFactor_);
     });
@@ -247,10 +339,10 @@ class WSKeyInputHandler extends KeyInputHandler {
   constructor() {
     super();
     let eventHandler = event => {
-      if(event.keyCode === 87) {
+      if(event.code === 'KeyW') {
         this.wasUpPushed_ = true;
       }
-      else if(event.keyCode === 83) {
+      else if(event.code === 'KeyS') {
         this.wasDownPushed_ = true;
       }
     }
@@ -273,7 +365,10 @@ class ActorCollisionHandler {
     return this.pairs_.has(this.toKey_(colliderType, collidedType));
   }
   applyCollisionAction(collider, collided) {
+    console.log(collider.type);
+    console.log(collided.type);
     if(this.hasCollisionAction(collider.type, collided.type)) {
+      console.log("has collision action!");
       this.pairs_.get(this.toKey_(collider.type, collided.type)).applyAction(collider, collided);
     }
   }
@@ -284,7 +379,13 @@ class GameController {
     this.game_ = game;
     this.maxScore_ = maxScore;
     let Handler = new ActorCollisionHandler;
-    this.world_ = new WorldModel(Handler, 100, 50);
+    let WBCH = new WallBallCollisionHandler;
+    Handler.addCollisionAction("Wall", "Ball", WBCH);
+    let GBCH = new GoalBallCollisionHandler;
+    Handler.addCollisionAction("Goal", "Ball", GBCH);
+    let PBCH = new PaddleBallCollisionHandler;
+    Handler.addCollisionAction("Paddle", "Ball", PBCH);
+    this.world_ = new WorldModel(Handler, 50, 25);
     this.players_ = [];
   }
   init(data) {
@@ -293,9 +394,9 @@ class GameController {
     let compCols = ["green", "orange"]
     if((data.numOfHumanPlayers !== 0) && (data.numOfHumanPlayers < 3)) {
       for(let i=0; i < (data.numOfHumanPlayers); i++) {
-        let value = null;
+        let value = 20;
         let p = new Point(value, value);
-        let myPaddle = new Paddle(p, myCols[i]);
+        let myPaddle = new Paddle(p, 5, myCols[i]);
         let pc = new PaddleController(this.world_, myPaddle);
         let player = new HumanPlayer(pc, arr[i]);
         this.player = player;
@@ -311,27 +412,27 @@ class GameController {
         let p = new Point(value, value);
         let myPaddle = new Paddle(p, compCols[i]);
         let pc = new PaddleController(this.world_, myPaddle);
-        let player = new AIPlayer(pc, 1);
+        let player = new AIPlayer(pc);
         this.player = player;
         this.world_.addActor(myPaddle);
       }
     }
+    let loadEmUp = new WorldLoader();
+    levelCreation();
+    loadEmUp.readData(pongLevel, this.world_);
     this.world_.addView(new CanvasView(10));
     this.run();
   }
-  
   set player(p) {
     if(p instanceof Player) {
       this.players_.push(p);
     }
     else throw new Error("Must provide a valid player.");
   }
-
-  get score() {
-    return this.score_;
-  }
-
   run() {
+    let randDir = Math.round(Math.random());
+    let pongBall = new Ball((this.world_.width_/2), (this.world_.height_/2), ((randDir * 180) + 50), "white");
+    this.world_.addActor(pongBall);
     let lastTime = 0;
     let giveTime = milliseconds => {
       lastTime = milliseconds;
@@ -381,12 +482,36 @@ class Wall extends Actor {
   constructor(x, y) {
     super();
     this.position_ = new Point(x, y);
+    this.color_ = "rgb(0, 100, 0)"
   }
   get position() {
     return this.position_;
   }
   get type() {
     return "Wall";
+  }
+  get color() {
+    return this.color_;
+  }
+  update() {
+
+  }
+}
+
+class Goal extends Actor {
+  constructor(x, y) {
+    super();
+    this.position_ = new Point(x, y);
+    this.color_ = "rgb(0, 100, 0)";
+  }
+  get position() {
+    return this.position_;
+  }
+  get type() {
+    return "Goal";
+  }
+  get color() {
+    return this.color_;
   }
   update() {
 
@@ -414,6 +539,7 @@ class WallBallCollisionHandler extends CollisionHandler {
     super();
   }
   applyAction(wall, ball) {
+    console.log("in the WBCH");
     ball.reflectAngle();
   }
 }
@@ -450,11 +576,11 @@ class MainMenuController {
     this.oneEachButton_ = document.createElement("button");
     this.twoCompsButton_ = document.createElement("button");
     this.twoHumansButton_.appendChild(document.createTextNode("Play with 2 Players!"));  
-    this.twoHumansButton_.addEventListener("click", this.switchContext_({H: 2, C: 0}).bind(this));
+    this.twoHumansButton_.addEventListener("click", this.switchContext_.bind(this, [2, 0]));
     this.oneEachButton_.appendChild(document.createTextNode("Play against an AI!"));  
-    this.oneEachButton_.addEventListener("click", this.switchContext_({H: 1, C: 1}).bind(this));
+    this.oneEachButton_.addEventListener("click", this.switchContext_.bind(this, [1, 1]));
     this.twoCompsButton_.appendChild(document.createTextNode("Watch 2 AI!"));  
-    this.twoCompsButton_.addEventListener("click", this.switchContext_({H: 0, C: 2}).bind(this));
+    this.twoCompsButton_.addEventListener("click", this.switchContext_.bind(this, [0, 2]));
   }
   init(data) {
     document.getElementById("game-area").appendChild(this.twoHumansButton_);
@@ -464,8 +590,8 @@ class MainMenuController {
   switchContext_(myPlayers) {
     document.getElementById("game-area").removeChild(this.twoHumansButton_);
     document.getElementById("game-area").removeChild(this.oneEachButton_);
-    document.getElementById("game-area").removeChild(this.twoComps_);
-    this.game_.switchContext({numOfHumanPlayers: myPlayers.H, numOfAIPlayers: myPlayers.C});
+    document.getElementById("game-area").removeChild(this.twoCompsButton_);
+    this.game_.switchContext({numOfHumanPlayers: myPlayers[0], numOfAIPlayers: myPlayers[1]});
   }
 }
 
@@ -496,7 +622,6 @@ hereWeGo.run();
 
 /*************************/
 /**
- * Need Goal class
  * Need AI class
  * need scorekeeper class
 /*
@@ -509,16 +634,25 @@ class Paddle extends Actor {
       this.parts_ = [point]; 
     }
     else throw new Error("Must be given a valid Point.");
-    for(let index=1; index < (length - 1); index++) this.parts_.push(new Point(point.posX, point.posY + index));
+    for(let index=1; index < length; index++) {
+      this.parts_.push(new Point(point.posX, point.posY + index));
+    }
     this.color_ = color || "white";
     this.currentDirection_ = "none";
   }
   move(steps) {
+    
     if(this.currentDirection_ === "Up") {
-      this.position_ = new Point((this.position_.posX - steps), this.position.posY);
+      this.parts_[0] = new Point(this.position.posX, (this.position.posY - steps));
+      for(let index = (this.parts_.length - 1); index > 0; index = index - 1) {
+        this.parts_[index] = this.parts_[index-1];
+      }
     }
-    else if(this.currentDirection === "Down") {
-      this.position_ = new Point((this.position_.posX + steps), this.position.posY);
+    else if(this.currentDirection_ === "Down") {
+      this.parts_[0] = new Point(this.position.posX, (this.position.posY + steps));
+      for(let index = (this.parts_.length - 1); index > 0; index = index - 1) {
+        this.parts_[index] = this.parts_[index-1];
+      }
     }
     else {
 
@@ -526,6 +660,7 @@ class Paddle extends Actor {
   }
   update(steps) {
     this.move(steps);
+    this.currentDirection_ = "none";
   }
   get position() {
     return this.parts_[0];
@@ -562,7 +697,7 @@ class Ball extends Collidable {
     this.isActive_ = true;
   }
   move(steps) {
-    this.position_ = new Point(this.position_.posX + (steps*Math.round(Math.cos((this.theta_*Math.PI)/180))), this.position_.posY + (steps*Math.round(Math.sin((this.theta_*Math.PI)/180))));
+    this.position_ = new Point(this.position_.posX + (steps*Math.round(Math.cos(((this.theta_%360)*Math.PI)/180))), this.position_.posY + (steps*Math.round(Math.sin(((this.theta_%360)*Math.PI)/180))));
   }
   update(steps) {
     this.move(steps);
@@ -579,9 +714,12 @@ class Ball extends Collidable {
       }
       else return true;
     }
-    else return this.position.equals(a);
+    else {
+      return (this.position_.equals(a.position));
+    }
   }
   reflectAngle() {
+    console.log("in reflect angle");
     let phi = Math.Round((Math.asin(Math.cos((this.theta_*Math.PI)/180))*180)/Math.PI);
     if(this.theta_ <= 90 && this.theta_ > 0) {
       this.theta_ = (90 + phi) % 360;
@@ -607,7 +745,7 @@ class Ball extends Collidable {
     return this.color_;
   }
   get type() {
-    return "Ball"
+    return "Ball";
   }
   score() {
     this.isActive_ = false;
