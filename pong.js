@@ -119,12 +119,10 @@ class WorldModel {
     if(!(ball.val.isActive)) {
       this.actors_.splice(ball.ind ,1);
       let randDir = Math.round(Math.random());
-      let pongBall = new Ball((this.world_.width_/2), (this.world_.height_/2), ((randDir * 180) + 50), "white");
-      this.world_.addActor(pongBall); 
+      let pongBall = new Ball((this.width_/2), (this.height_/2), this.height_, new Velocity((-1)**(Math.round(Math.random())), (-1)**(Math.round(Math.random()))), "white");
+	  this.world_.addActor(pongBall);
     }
-    if(!(this.views_ == [])) {
-      this.views_.forEach(x => x.display(this));
-    }
+    this.views_.forEach(x => x.display(this));
   }
   get score() {
     return this.score_;
@@ -431,7 +429,7 @@ class GameController {
   }
   run() {
     let randDir = Math.round(Math.random());
-    let pongBall = new Ball((this.world_.width_/2), (this.world_.height_/2), ((randDir * 180) + 50), "white");
+    let pongBall = new Ball((this.world_.width_/2), (this.world_.height_/2), this.world_.height, new Velocity((-1)**(Math.round(Math.random())), (-1)**(Math.round(Math.random()))) "white");
     this.world_.addActor(pongBall);
     let lastTime = 0;
     let giveTime = milliseconds => {
@@ -688,16 +686,30 @@ class Paddle extends Actor {
   }
 }
 
+class Velocity {
+	constructor(x, y) {
+		this.xSpeed_ = x;
+		this.ySpeed_ = y;
+	}
+	get xSpeed() {
+		return this.xSpeed_;
+	}
+	get ySpeed() {
+		return this.ySpeed_;
+	}
+}
+
 class Ball extends Collidable {
-  constructor(x, y, theta, color) {
+  constructor(x, y, worldHeight, velocity, color) {
     super();
-    this.theta_ = theta || 0;
+    this.velocity_ = velocity;
+	this.worldHeight_ = worldHeight;
     this.position_ = new Point(x, y);
     this.color_ = color || "white";
     this.isActive_ = true;
   }
   move(steps) {
-    this.position_ = new Point(this.position_.posX + (steps*Math.round(Math.cos(((this.theta_%360)*Math.PI)/180))), this.position_.posY + (steps*Math.round(Math.sin(((this.theta_%360)*Math.PI)/180))));
+    this.position_ = new Point(this.position_.posX + (steps*this.velocity_.xSpeed), this.position_.posY + (steps*this.velocity_.ySpeed));
   }
   update(steps) {
     this.move(steps);
@@ -720,17 +732,12 @@ class Ball extends Collidable {
   }
   reflectAngle() {
     console.log("in reflect angle");
-    let phi = Math.Round((Math.asin(Math.cos((this.theta_*Math.PI)/180))*180)/Math.PI);
-    if(this.theta_ <= 90 && this.theta_ > 0) {
-      this.theta_ = (90 + phi) % 360;
-    }
-    else if(this.theta_ <= 180 && this.theta_ > 90) {
-      this.theta_ = (90 - phi) % 360;
-    }
-    else if(this.theta_ <= 270 && this.theta_ > 180) {
-      this.theta_ = (270 + phi) % 360;
-    }
-    else this.theta_ = (270 - phi) % 360;
+	if(this.position_.posY > 1 && this.position_.posy < (this.worldHeight_ - 1)) {
+		this.velocity_ = new Velocity(-this.velocity_.xSpeed, this.velocity_.ySpeed);
+	}
+	else {
+		this.velocity_ = new Velocity(this.velocity_.xSpeed, -this.velocity_.ySpeed_);
+	}
   }
   get isActive() {
     return this.isActive_;
