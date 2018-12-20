@@ -111,16 +111,15 @@ class WorldModel {
     let ballInd = getIndex(this.actors_);
     let ball = {val: ballArr[0], ind: ballInd};
     this.actors_.forEach(a => {
-      if(a.type !== "Ball" && ball.val.didCollide(a)) {
+      if(ball.val.didCollide(a)) {
         console.log("collision!");
         this.ach_.applyCollisionAction(a, ball.val);
       }
     });
     if(!(ball.val.isActive)) {
       this.actors_.splice(ball.ind ,1);
-      let randDir = Math.round(Math.random());
-      let pongBall = new Ball((this.width_/2), (this.height_/2), this.height_, new Velocity((-1)**(Math.round(Math.random())), (-1)**(Math.round(Math.random()))), "white");
-	  this.world_.addActor(pongBall);
+      let pongBall = new Ball(Math.round(this.width_/2), Math.round(this.height_/2), this.height_, new Velocity(Math.pow(-1, Math.round(Math.random())), Math.pow(-1, Math.round(Math.random()))), "white");
+	    this.addActor(pongBall);
     }
     this.views_.forEach(x => x.display(this));
   }
@@ -429,7 +428,7 @@ class GameController {
   }
   run() {
     let randDir = Math.round(Math.random());
-    let pongBall = new Ball((this.world_.width_/2), (this.world_.height_/2), this.world_.height, new Velocity((-1)**(Math.round(Math.random())), (-1)**(Math.round(Math.random()))) "white");
+    let pongBall = new Ball(Math.round(this.world_.width/2), Math.round(this.world_.height/2), this.world_.height, new Velocity(Math.pow(-1, Math.round(Math.random())), Math.pow(-1, Math.round(Math.random()))), "white");
     this.world_.addActor(pongBall);
     let lastTime = 0;
     let giveTime = milliseconds => {
@@ -480,7 +479,7 @@ class Wall extends Actor {
   constructor(x, y) {
     super();
     this.position_ = new Point(x, y);
-    this.color_ = "rgb(0, 100, 0)"
+    this.color_ = "rgb(0, 0, 0)"
   }
   get position() {
     return this.position_;
@@ -500,7 +499,7 @@ class Goal extends Actor {
   constructor(x, y) {
     super();
     this.position_ = new Point(x, y);
-    this.color_ = "rgb(0, 100, 0)";
+    this.color_ = "rgb(0, 0, 0)";
   }
   get position() {
     return this.position_;
@@ -703,7 +702,7 @@ class Ball extends Collidable {
   constructor(x, y, worldHeight, velocity, color) {
     super();
     this.velocity_ = velocity;
-	this.worldHeight_ = worldHeight;
+	  this.worldHeight_ = worldHeight;
     this.position_ = new Point(x, y);
     this.color_ = color || "white";
     this.isActive_ = true;
@@ -715,10 +714,14 @@ class Ball extends Collidable {
     this.move(steps);
   }
   didCollide(a) {
-    if(a.type === "Paddle") {
+    if(a === this) {
+      return false;
+    }
+    else if(a.type === "Paddle") {
       let it = a.parts;
       let placeHolder = it.next();
       while(!placeHolder.done && !(this.position.equals(placeHolder.value))) {
+        console.log("in while loop");
         placeHolder = it.next();
       }
       if(placeHolder.done) {
